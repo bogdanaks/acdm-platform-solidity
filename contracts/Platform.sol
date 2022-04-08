@@ -81,7 +81,7 @@ contract Platform is ReentrancyGuard {
 
   function buyToken() public payable nonReentrant() {
     require(msg.value > 0, "Greater than zero");
-    uint256 countBuy = msg.value / salePrice;
+    uint256 countBuy = (msg.value / salePrice) * 1e18;
     tokensCount -= countBuy;
     token.transfer(msg.sender, countBuy);
   }
@@ -102,17 +102,18 @@ contract Platform is ReentrancyGuard {
     orders[ordersCount].ethPrice = _ethPrice;
     orders[ordersCount].ethAmountTrade = 0;
 
-    token.transfer(address(this), _tokensAmount);
+    token.transferFrom(msg.sender, address(this), _tokensAmount);
 
     ordersCount++;
   }
 
   function removeOrder(uint128 orderId) public {
-    require(users[msg.sender].orders[orderId].tokensAmount > 0, "Order doesnt exist");
+    require(orders[orderId].tokensAmount > 0, "Order doesnt exist");
 
     token.transfer(msg.sender, users[msg.sender].orders[orderId].tokensAmount);
     payable(msg.sender).transfer(users[msg.sender].orders[orderId].ethAmountTrade);
 
+    delete orders[orderId];
     delete users[msg.sender].orders[orderId];
   }
 

@@ -9,11 +9,13 @@ export default function (): void {
     await this.platform.buyToken({
       value: parseEther("0.5"),
     });
+
     await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 3]); // 3 days
     await this.platform.startTradeRound();
 
     expect((await this.platform.round()).status).to.be.equal(STATUS.TRADE);
 
+    await this.token.approve(this.platform.address, parseEther("25000"));
     await this.platform.addOrder(parseEther("25000"), parseEther("0.1"));
     const order = await this.platform.orders(0);
 
