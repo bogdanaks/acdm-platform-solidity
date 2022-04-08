@@ -6,15 +6,15 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract Token is ERC20, AccessControl {
   bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-  bytes32 public constant DAO_ROLE = keccak256("DAO_ROLE");
+  bytes32 public constant PLATFORM_ROLE = keccak256("PLATFORM_ROLE");
 
   constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol) {
     _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-    _setRoleAdmin(DAO_ROLE, DEFAULT_ADMIN_ROLE);
+    _setRoleAdmin(PLATFORM_ROLE, DEFAULT_ADMIN_ROLE);
   }
 
   modifier onlyOwnerOrDao {
-    require(hasRole(DAO_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Only owner or dao");
+    require(hasRole(PLATFORM_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Only owner or platform");
     _;
   }
 
