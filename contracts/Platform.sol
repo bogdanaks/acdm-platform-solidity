@@ -3,7 +3,6 @@ pragma solidity ^0.8.11;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-// import "@openzeppelin/contracts/access/Ownable.sol"; // TODO mb del
 import "./IToken.sol";
 
 contract Platform is ReentrancyGuard {
@@ -19,12 +18,12 @@ contract Platform is ReentrancyGuard {
     uint256 tokensAmount;
     uint256 ethPrice;
     uint256 ethAmountTrade;
+    address creator;
   }
 
   struct User {
     bool isExist;
     address referrer;
-    Order[] orders;
   }
 
   IToken public token;
@@ -86,41 +85,45 @@ contract Platform is ReentrancyGuard {
     token.transfer(msg.sender, countBuy);
   }
 
-  function addOrder(uint256 _tokensAmount, uint256 _ethPrice) public {
+  function addOrder(uint256 _tokensAmount, uint256 _ethPrice) public nonReentrant() {
     require(round.status == Status.TRADE, "Only for TRADE round");
 
-    users[msg.sender].orders.push(
-      Order({
-        id: ordersCount,
-        tokensAmount: _tokensAmount,
-        ethPrice: _ethPrice,
-        ethAmountTrade: 0
-      })
-    );
     orders[ordersCount].id = ordersCount;
     orders[ordersCount].tokensAmount = _tokensAmount;
     orders[ordersCount].ethPrice = _ethPrice;
     orders[ordersCount].ethAmountTrade = 0;
+    orders[ordersCount].creator = msg.sender;
 
     token.transferFrom(msg.sender, address(this), _tokensAmount);
 
     ordersCount++;
   }
 
-  function removeOrder(uint128 orderId) public {
+  function removeOrder(uint128 orderId) public nonReentrant() {
     require(orders[orderId].tokensAmount > 0, "Order doesnt exist");
 
-    token.transfer(msg.sender, users[msg.sender].orders[orderId].tokensAmount);
-    payable(msg.sender).transfer(users[msg.sender].orders[orderId].ethAmountTrade);
+    token.transfer(msg.sender, orders[orderId].tokensAmount);
+    payable(msg.sender).transfer(orders[orderId].ethAmountTrade);
 
     delete orders[orderId];
-    delete users[msg.sender].orders[orderId];
   }
 
-  function redeemOrder(uint128 _orderId) public payable {
+  function redeemOrder(uint128 _orderId) public payable nonReentrant() {
     require(orders[_orderId].tokensAmount > 0, "Order doesnt exist");
-    // require(orders[_orderId].tokensAmount > _tokensAmount, "Must be less than available amount");
-    uint256 _ethPrice = msg.value / orders[_orderId].ethPrice;
-    console.log("Eth price %s", _ethPrice);
+    uint256 amountBuy = orders[_orderId].tokensAmount / orders[_orderId].ethPrice * msg.value;
+    uint256 _tokensAmount = orders[_orderId].tokensAmount;
+    uint256 tokenAmountTransfer = 0;
+
+    if (amountBuy > _tokensAmount) {
+      orders[_orderId].tokensAmount = 0;
+      tokenAmountTransfer = _tokensAmount;
+    } else {
+      orders[_orderId].tokensAmount -= amountBuy;
+      tokenAmountTransfer = amountBuy;
+    }
+
+    orders[_orderId].ethAmountTrade += msg.value;
+    token.transfer(msg.sender, tokenAmountTransfer);
+    payable(orders[_orderId].creator).transfer(msg.value);
   }
 }

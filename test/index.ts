@@ -6,6 +6,7 @@ import buyTokenTest from "./buyToken";
 import startTradeRoundTest from "./startTradeRound";
 import addOrderTest from "./addOrder";
 import removeOrderTest from "./removeOrder";
+import redeemOrderTest from "./redeemOrder";
 
 describe("Test functions", async function () {
   beforeEach(async function () {
@@ -32,5 +33,5 @@ describe("Test functions", async function () {
   startTradeRoundTest();
   addOrderTest();
   removeOrderTest();
-  // redeemOrder();
+  redeemOrderTest();
 });
