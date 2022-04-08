@@ -41,6 +41,41 @@ contract Platform is ReentrancyGuard {
     roundTime = _roundTime;
   }
 
+  function rewardReferrerSaleRound() internal {
+    address referrer = users[msg.sender].referrer;
+    address referrerLvl2 = users[referrer].referrer;
+
+    if (address(referrer) != address(0)) {
+      uint256 fee = (msg.value / 100) * 5;
+      payable(referrer).transfer(fee);
+    }
+
+    if (address(referrerLvl2) != address(0)) {
+      uint256 fee = (msg.value / 100) * 3;
+      payable(referrerLvl2).transfer(fee);
+    }
+  }
+
+  function rewardReferrerTradeRound() internal returns(uint256 ethAmountSend) {
+    address referrer = users[msg.sender].referrer;
+    address referrerLvl2 = users[referrer].referrer;
+    uint256 ethAmount = msg.value;
+
+    if (address(referrer) != address(0)) {
+      uint256 fee = (msg.value / 100) * (2.5 * 1e2);
+      payable(referrer).transfer(fee / 1e2);
+      ethAmount -= fee / 1e2;
+    }
+
+    if (address(referrerLvl2) != address(0)) {
+      uint256 fee = (msg.value / 100) * (2.5 * 1e2);
+      payable(referrerLvl2).transfer(fee / 1e2);
+      ethAmount -= fee / 1e2;
+    }
+
+    return ethAmount;
+  }
+
   function register(address _referrer) public {
     require(!users[msg.sender].isExist, "Already register");
     if (_referrer != msg.sender) {
@@ -83,6 +118,7 @@ contract Platform is ReentrancyGuard {
     uint256 countBuy = (msg.value / salePrice) * 1e18;
     tokensCount -= countBuy;
     token.transfer(msg.sender, countBuy);
+    rewardReferrerSaleRound();
   }
 
   function addOrder(uint256 _tokensAmount, uint256 _ethPrice) public nonReentrant() {
@@ -122,8 +158,9 @@ contract Platform is ReentrancyGuard {
       tokenAmountTransfer = amountBuy;
     }
 
+    uint256 ethAmountSend = rewardReferrerTradeRound();
     orders[_orderId].ethAmountTrade += msg.value;
     token.transfer(msg.sender, tokenAmountTransfer);
-    payable(orders[_orderId].creator).transfer(msg.value);
+    payable(orders[_orderId].creator).transfer(ethAmountSend);
   }
 }
