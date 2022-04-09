@@ -35,6 +35,7 @@ contract Platform is ReentrancyGuard {
   mapping(address => User) public users;
   mapping(uint128 => Order) public orders;
   uint128 public ordersCount = 0;
+  uint256 public ethRoundAmount = 0;
 
   constructor(IToken _token, uint256 _roundTime) {
     token = _token;
@@ -89,18 +90,31 @@ contract Platform is ReentrancyGuard {
     }
   }
 
+  function stopSaleRound() public {
+    require(round.status == Status.SALE, "Only SALE round");
+    if (round.status == Status.TRADE && (round.updatedAt + roundTime >= block.timestamp || tokensCount == 0)) {
+      token.burn(address(this), tokensCount);
+      tokensCount = 0;
+      round.updatedAt = block.timestamp;
+    }
+  }
+
   function startSaleRound() public {
     if (round.status == Status.CREATED) {
       token.mint(address(this), 1e18 * 100000);
       round.status = Status.SALE;
       round.updatedAt = block.timestamp;
-      salePrice = (1 / 100000) * 1e18;
+      salePrice = 0.00001 ether;
       tokensCount = 1e18 * 100000;
 
       return;
     }
 
     require(round.status != Status.SALE, "Already start sale round");
+    require(round.updatedAt + roundTime <= block.timestamp, "The round time hasn't passed yet");
+    salePrice = (salePrice * 103) / 100 + 0.000004 ether;
+    uint256 mintAmount = ethRoundAmount / salePrice * 10**18;
+    token.mint(address(this), mintAmount);
     round.status = Status.SALE;
     round.updatedAt = block.timestamp;
   }
@@ -158,6 +172,7 @@ contract Platform is ReentrancyGuard {
       tokenAmountTransfer = amountBuy;
     }
 
+    ethRoundAmount += msg.value;
     uint256 ethAmountSend = rewardReferrerTradeRound();
     orders[_orderId].ethAmountTrade += msg.value;
     token.transfer(msg.sender, tokenAmountTransfer);
