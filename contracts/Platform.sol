@@ -42,7 +42,7 @@ contract Platform is ReentrancyGuard {
     roundTime = _roundTime;
   }
 
-  function rewardReferrerSaleRound() internal {
+  function rewardReferrerSaleRound() private {
     address referrer = users[msg.sender].referrer;
     address referrerLvl2 = users[referrer].referrer;
 
@@ -57,7 +57,7 @@ contract Platform is ReentrancyGuard {
     }
   }
 
-  function rewardReferrerTradeRound() internal returns(uint256 ethAmountSend) {
+  function rewardReferrerTradeRound() private returns(uint256 ethAmountSend) {
     address referrer = users[msg.sender].referrer;
     address referrerLvl2 = users[referrer].referrer;
     uint256 ethAmount = msg.value;
