@@ -7,7 +7,7 @@ export default function (): void {
   it("RemoveOrder: Success", async function (): Promise<void> {
     await this.platform.startSaleRound();
     await this.platform.buyToken({
-      value: parseEther("0.5"),
+      value: parseEther("0.000005"),
     });
     await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 3]); // 3 days
     await this.platform.startTradeRound();

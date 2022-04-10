@@ -22,4 +22,11 @@ export default function (): void {
     expect(order.tokensAmount).to.be.equal(parseEther("25000"));
     expect(order.ethPrice).to.be.equal(parseEther("0.1"));
   });
+
+  it("AddOrder: Only for TRADE round", async function (): Promise<void> {
+    await this.token.approve(this.platform.address, parseEther("25000"));
+    expect(
+      this.platform.addOrder(parseEther("5000"), parseEther("0.1"))
+    ).to.be.revertedWith("Only for TRADE round");
+  });
 }

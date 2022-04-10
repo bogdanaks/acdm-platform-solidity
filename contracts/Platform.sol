@@ -90,15 +90,6 @@ contract Platform is ReentrancyGuard {
     }
   }
 
-  function stopSaleRound() public {
-    require(round.status == Status.SALE, "Only SALE round");
-    if (round.status == Status.TRADE && (round.updatedAt + roundTime >= block.timestamp || tokensCount == 0)) {
-      token.burn(address(this), tokensCount);
-      tokensCount = 0;
-      round.updatedAt = block.timestamp;
-    }
-  }
-
   function startSaleRound() public {
     if (round.status == Status.CREATED) {
       token.mint(address(this), 1e18 * 100000);
@@ -110,13 +101,20 @@ contract Platform is ReentrancyGuard {
       return;
     }
 
-    require(round.status != Status.SALE, "Already start sale round");
-    require(round.updatedAt + roundTime <= block.timestamp, "The round time hasn't passed yet");
-    salePrice = (salePrice * 103) / 100 + 0.000004 ether;
-    uint256 mintAmount = ethRoundAmount / salePrice * 10**18;
-    token.mint(address(this), mintAmount);
-    round.status = Status.SALE;
-    round.updatedAt = block.timestamp;
+    if (block.timestamp >= round.updatedAt + roundTime || tokensCount == 0) {
+      if (tokensCount > 0) {
+        token.burn(address(this), tokensCount);
+      }
+
+      tokensCount = 0;
+      salePrice = (salePrice * 103) / 100 + 0.000004 ether;
+      uint256 mintAmount = ethRoundAmount / salePrice * 1e18;
+      round.status = Status.SALE;
+      round.updatedAt = block.timestamp;
+      token.mint(address(this), mintAmount);
+    } else {
+      revert("Not expired or not sold all tokens");
+    }
   }
 
   function startTradeRound() public {
@@ -129,9 +127,16 @@ contract Platform is ReentrancyGuard {
 
   function buyToken() public payable nonReentrant() {
     require(msg.value > 0, "Greater than zero");
-    uint256 countBuy = (msg.value / salePrice) * 1e18;
-    tokensCount -= countBuy;
-    token.transfer(msg.sender, countBuy);
+    uint256 amountBuy = tokensCount / salePrice * msg.value;
+
+    if (amountBuy >= tokensCount) {
+      token.transfer(msg.sender, tokensCount);
+      tokensCount = 0;
+    } else {
+      tokensCount -= amountBuy; 
+      token.transfer(msg.sender, amountBuy);
+    }
+    
     rewardReferrerSaleRound();
   }
 
