@@ -17,15 +17,6 @@ export default function (): void {
     );
   });
 
-  it("StartSaleRound: Burn token", async function (): Promise<void> {
-    await this.platform.startSaleRound();
-    await this.platform.buyToken({
-      value: parseEther("0.000005"),
-    });
-    await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 3]); // 3 days
-    await this.platform.startSaleRound();
-  });
-
   it("StartSaleRound: Revert", async function (): Promise<void> {
     await this.platform.startSaleRound();
     await this.platform.buyToken({
@@ -33,7 +24,9 @@ export default function (): void {
     });
     const tokens = await this.platform.tokensCount();
     expect(tokens).to.be.equal(parseEther("90000"));
-    expect(this.platform.startSaleRound()).to.be.revertedWith("");
+    expect(this.platform.startSaleRound()).to.be.revertedWith(
+      "Not expired or not sold all tokens"
+    );
   });
 
   it("StartSaleRound: After trade round", async function (): Promise<void> {
@@ -50,5 +43,16 @@ export default function (): void {
     });
     await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 3]); // 3 days
     await this.platform.startSaleRound();
+  });
+
+  it("StartSaleRound: Dublicate", async function (): Promise<void> {
+    await this.platform.startSaleRound();
+    await this.platform.buyToken({
+      value: parseEther("0.000005"),
+    });
+    await ethers.provider.send("evm_increaseTime", [60 * 60 * 24 * 3]); // 3 days
+    expect(this.platform.startSaleRound()).to.be.revertedWith(
+      "Only after TRADE round"
+    );
   });
 }

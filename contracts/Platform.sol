@@ -90,6 +90,12 @@ contract Platform is ReentrancyGuard {
     }
   }
 
+  function finishSaleAndBurn() private {
+    token.burn(address(this), tokensCount);
+    round.status = Status.TRADE;
+    round.updatedAt = block.timestamp;
+  }
+
   function startSaleRound() public {
     if (round.status == Status.CREATED) {
       token.mint(address(this), 1e18 * 100000);
@@ -101,10 +107,8 @@ contract Platform is ReentrancyGuard {
       return;
     }
 
-    if (block.timestamp >= round.updatedAt + roundTime || tokensCount == 0) {
-      if (tokensCount > 0) {
-        token.burn(address(this), tokensCount);
-      }
+    if (block.timestamp >= round.updatedAt + roundTime) {
+      require(round.status == Status.TRADE, "Only after TRADE round");
 
       tokensCount = 0;
       salePrice = (salePrice * 103) / 100 + 0.000004 ether;
@@ -120,7 +124,10 @@ contract Platform is ReentrancyGuard {
   function startTradeRound() public {
     require(round.status != Status.CREATED, "Must be after SALE round");
     require(round.status == Status.SALE, "Already started");
-    require(round.updatedAt + roundTime <= block.timestamp, "The round time hasn't passed yet");
+    require(round.updatedAt + roundTime <= block.timestamp || tokensCount == 0, "Not expired or not sold all tokens");
+
+    if (tokensCount == 0) finishSaleAndBurn();
+
     round.status = Status.TRADE;
     round.updatedAt = block.timestamp;
   }
