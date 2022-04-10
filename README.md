@@ -1,8 +1,12 @@
 # Advanced Sample Hardhat Project
 
-This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
+Contract deployed to: 0x0d72df35A64Ac87496fb92bAd4f10C45714BF91d
 
-The project comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts. It also comes with a variety of other tools, preconfigured to work with the project code.
+Owner address is: 0x0d637904305685c537494b96E74a0C0a4D1C647f
+
+Successfully verified contract Platform on Etherscan.
+
+https://rinkeby.etherscan.io/address/0x0d72df35A64Ac87496fb92bAd4f10C45714BF91d#code
 
 Try running some of the following tasks:
 
